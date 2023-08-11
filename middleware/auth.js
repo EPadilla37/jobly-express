@@ -1,11 +1,8 @@
 "use strict";
 
-/** Convenience middleware to handle common auth cases in routes. */
-
 const jwt = require("jsonwebtoken");
 const { SECRET_KEY } = require("../config");
 const { UnauthorizedError } = require("../expressError");
-
 
 /** Middleware: Authenticate user.
  *
@@ -14,7 +11,6 @@ const { UnauthorizedError } = require("../expressError");
  *
  * It's not an error if no token was provided or if the token is not valid.
  */
-
 function authenticateJWT(req, res, next) {
   try {
     const authHeader = req.headers && req.headers.authorization;
@@ -22,9 +18,11 @@ function authenticateJWT(req, res, next) {
       const token = authHeader.replace(/^[Bb]earer /, "").trim();
       res.locals.user = jwt.verify(token, SECRET_KEY);
     }
+    // Always call next() to move to the next middleware
     return next();
   } catch (err) {
-    return next();
+    // Don't return here; just move to the next middleware
+    next();
   }
 }
 
@@ -32,7 +30,6 @@ function authenticateJWT(req, res, next) {
  *
  * If not, raises Unauthorized.
  */
-
 function ensureLoggedIn(req, res, next) {
   try {
     if (!res.locals.user) throw new UnauthorizedError();
@@ -42,8 +39,39 @@ function ensureLoggedIn(req, res, next) {
   }
 }
 
+/** Middleware to check if the user is an admin.
+ *
+ * If not, raises Unauthorized.
+ */
+function ensureAdmin(req, res, next) {
+  try {
+    if (!res.locals.user || !res.locals.user.isAdmin) {
+      throw new UnauthorizedError("Admin privileges required");
+    }
+    return next();
+  } catch (err) {
+    return next(err);
+  }
+}
+
+/** Middleware to check if the user is the same as the requested user.
+ *
+ * If not, raises Unauthorized.
+ */
+function ensureCorrectUser(req, res, next) {
+  try {
+    if (!res.locals.user || res.locals.user.username !== req.params.username) {
+      throw new UnauthorizedError("Unauthorized: Access denied");
+    }
+    return next();
+  } catch (err) {
+    return next(err);
+  }
+}
 
 module.exports = {
   authenticateJWT,
   ensureLoggedIn,
+  ensureAdmin,
+  ensureCorrectUser,
 };

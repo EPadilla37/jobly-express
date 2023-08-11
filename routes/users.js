@@ -60,6 +60,16 @@ router.get("/", ensureLoggedIn, async function (req, res, next) {
   }
 });
 
+router.post('/:username/jobs/:id', ensureLoggedIn, async (req, res, next) => {
+  try {
+    const { username, id } = req.params;
+    await User.apply(username, id);
+    return res.json({ applied: parseInt(id) });
+  } catch (err) {
+    return next(err);
+  }
+});
+
 
 /** GET /[username] => { user }
  *
@@ -68,9 +78,11 @@ router.get("/", ensureLoggedIn, async function (req, res, next) {
  * Authorization required: login
  **/
 
-router.get("/:username", ensureLoggedIn, async function (req, res, next) {
+router.get('/:username', ensureLoggedIn, async (req, res, next) => {
   try {
     const user = await User.get(req.params.username);
+    const appliedJobs = await User.getAppliedJobs(req.params.username); // Query applications table for job IDs
+    user.jobs = appliedJobs;
     return res.json({ user });
   } catch (err) {
     return next(err);

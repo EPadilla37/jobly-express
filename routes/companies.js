@@ -50,9 +50,38 @@ router.post("/", ensureLoggedIn, async function (req, res, next) {
  * Authorization required: none
  */
 
+// router.get("/", async function (req, res, next) {
+//   try {
+//     const companies = await Company.findAll();
+//     return res.json({ companies });
+//   } catch (err) {
+//     return next(err);
+//   }
+// });
+
+
+
 router.get("/", async function (req, res, next) {
   try {
-    const companies = await Company.findAll();
+    // Parse query parameters
+    const { minEmployees, maxEmployees, name } = req.query;
+
+    // Validate and format query parameters
+    let filters = {};
+    if (minEmployees !== undefined) {
+      if (isNaN(minEmployees)) throw new BadRequestError("minEmployees must be a number");
+      filters.minEmployees = +minEmployees;
+    }
+    if (maxEmployees !== undefined) {
+      if (isNaN(maxEmployees)) throw new BadRequestError("maxEmployees must be a number");
+      filters.maxEmployees = +maxEmployees;
+    }
+    if (name) {
+      filters.name = name;
+    }
+
+    const companies = await Company.findAll(filters);
+
     return res.json({ companies });
   } catch (err) {
     return next(err);
@@ -70,6 +99,8 @@ router.get("/", async function (req, res, next) {
 router.get("/:handle", async function (req, res, next) {
   try {
     const company = await Company.get(req.params.handle);
+    const jobs = await Job.findAll({ companyHandle: req.params.handle });
+    company.jobs = jobs;
     return res.json({ company });
   } catch (err) {
     return next(err);

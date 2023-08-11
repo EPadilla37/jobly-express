@@ -49,15 +49,49 @@ class Company {
    * Returns [{ handle, name, description, numEmployees, logoUrl }, ...]
    * */
 
-  static async findAll() {
-    const companiesRes = await db.query(
-          `SELECT handle,
-                  name,
-                  description,
-                  num_employees AS "numEmployees",
-                  logo_url AS "logoUrl"
-           FROM companies
-           ORDER BY name`);
+  // static async findAll() {
+  //   const companiesRes = await db.query(
+  //         `SELECT handle,
+  //                 name,
+  //                 description,
+  //                 num_employees AS "numEmployees",
+  //                 logo_url AS "logoUrl"
+  //          FROM companies
+  //          ORDER BY name`);
+  //   return companiesRes.rows;
+  // }
+
+  static async findAll(filters = {}) {
+    const whereClauses = [];
+    const values = [];
+
+    if (filters.minEmployees !== undefined) {
+      whereClauses.push(`num_employees >= $${values.length + 1}`);
+      values.push(filters.minEmployees);
+    }
+    if (filters.maxEmployees !== undefined) {
+      whereClauses.push(`num_employees <= $${values.length + 1}`);
+      values.push(filters.maxEmployees);
+    }
+    if (filters.nameLike) {
+      whereClauses.push(`name ILIKE $${values.length + 1}`);
+      values.push(`%${filters.nameLike}%`);
+    }
+
+    let query = `SELECT handle,
+                        name,
+                        description,
+                        num_employees AS "numEmployees",
+                        logo_url AS "logoUrl"
+                 FROM companies`;
+
+    if (whereClauses.length > 0) {
+      query += ` WHERE ${whereClauses.join(" AND ")}`;
+    }
+
+    query += " ORDER BY name";
+
+    const companiesRes = await db.query(query, values);
     return companiesRes.rows;
   }
 

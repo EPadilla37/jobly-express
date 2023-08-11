@@ -288,3 +288,45 @@ describe("DELETE /users/:username", function () {
     expect(resp.statusCode).toEqual(404);
   });
 });
+
+/************************************** POST /users/:username/jobs/:id */
+
+describe("POST /users/:username/jobs/:id", function () {
+  test("works for users: apply to job", async function () {
+    const resp = await request(app)
+      .post(`/users/u1/jobs/3`)
+      .set("authorization", `Bearer ${u1Token}`);
+    expect(resp.statusCode).toEqual(201); // Change this to 201 for a successful application
+    expect(resp.body).toEqual({ applied: 3 });
+  });
+
+  test("not found if user doesn't exist", async function () {
+    const resp = await request(app)
+      .post(`/users/nope/jobs/3`)
+      .set("authorization", `Bearer ${u1Token}`);
+    expect(resp.statusCode).toEqual(404); // Change this to 404 for user not found
+    expect(resp.body).toEqual({
+      error: { message: "User not found", status: 404 },
+    });
+  });
+
+  test("not found if job doesn't exist", async function () {
+    const resp = await request(app)
+      .post(`/users/u1/jobs/999`)
+      .set("authorization", `Bearer ${u1Token}`);
+    expect(resp.statusCode).toEqual(404); // Change this to 404 for job not found
+    expect(resp.body).toEqual({
+      error: { message: "Job not found", status: 404 },
+    });
+  });
+
+  test("bad request if already applied", async function () {
+    const resp = await request(app)
+      .post(`/users/u1/jobs/1`) // Assuming user already applied to job 1
+      .set("authorization", `Bearer ${u1Token}`);
+    expect(resp.statusCode).toEqual(400); // Change this to 400 for already applied
+    expect(resp.body).toEqual({
+      error: { message: "User has already applied to this job", status: 400 },
+    });
+  });
+});

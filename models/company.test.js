@@ -85,6 +85,73 @@ describe("findAll", function () {
       },
     ]);
   });
+
+  test("works: with minEmployees filter", async function () {
+    let companies = await Company.findAll({ minEmployees: 2 });
+    expect(companies).toEqual([
+      {
+        handle: "c2",
+        name: "C2",
+        description: "Desc2",
+        numEmployees: 2,
+        logoUrl: "http://c2.img",
+      },
+      {
+        handle: "c3",
+        name: "C3",
+        description: "Desc3",
+        numEmployees: 3,
+        logoUrl: "http://c3.img",
+      },
+    ]);
+  });
+
+  test("works: with maxEmployees filter", async function () {
+    let companies = await Company.findAll({ maxEmployees: 2 });
+    expect(companies).toEqual([
+      {
+        handle: "c1",
+        name: "C1",
+        description: "Desc1",
+        numEmployees: 1,
+        logoUrl: "http://c1.img",
+      },
+      {
+        handle: "c2",
+        name: "C2",
+        description: "Desc2",
+        numEmployees: 2,
+        logoUrl: "http://c2.img",
+      },
+    ]);
+  });
+
+  test("works: with nameLike filter", async function () {
+    let companies = await Company.findAll({ nameLike: "C" });
+    expect(companies).toEqual([
+      {
+        handle: "c1",
+        name: "C1",
+        description: "Desc1",
+        numEmployees: 1,
+        logoUrl: "http://c1.img",
+      },
+      {
+        handle: "c2",
+        name: "C2",
+        description: "Desc2",
+        numEmployees: 2,
+        logoUrl: "http://c2.img",
+      },
+      {
+        handle: "c3",
+        name: "C3",
+        description: "Desc3",
+        numEmployees: 3,
+        logoUrl: "http://c3.img",
+      },
+    ]);
+  });
 });
 
 /************************************** get */
@@ -206,3 +273,49 @@ describe("remove", function () {
     }
   });
 });
+
+/************************************** find all */
+
+describe("POST /companies", function () {
+  test("ok for users", async function () {
+    const newCompany = {
+      handle: "newco",
+      name: "New Company",
+      description: "A new company",
+      numEmployees: 10,
+      logoUrl: "http://newco.img",
+    };
+    const resp = await request(app)
+      .post("/companies")
+      .send(newCompany)
+      .set("authorization", `Bearer ${u1Token}`);
+    
+    expect(resp.statusCode).toEqual(201);
+    expect(resp.body).toEqual({ company: newCompany });
+  });
+
+  test("bad request with missing data", async function () {
+    const resp = await request(app)
+      .post("/companies")
+      .send({})
+      .set("authorization", `Bearer ${u1Token}`);
+    
+    expect(resp.statusCode).toEqual(400);
+    expect(resp.body).toEqual({
+      error: { message: "Company data must include handle, name, description, numEmployees, and logoUrl", status: 400 },
+    });
+  });
+
+  test("bad request with invalid data", async function () {
+    const resp = await request(app)
+      .post("/companies")
+      .send({ handle: "newco", name: "New Company" }) // Missing required fields
+      .set("authorization", `Bearer ${u1Token}`);
+    
+    expect(resp.statusCode).toEqual(400);
+    expect(resp.body).toEqual({
+      error: { message: "Company data must include handle, name, description, numEmployees, and logoUrl", status: 400 },
+    });
+  });
+});
+
